@@ -3,6 +3,9 @@
   "version": "1.0.1",
   "description": "This is a Node.js module to manage the tables on Google Document using Google Docs API.",
   "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tanaikech/node-gdoctableapp.git"
