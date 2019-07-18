@@ -4,7 +4,7 @@
   "description": "This is a Node.js module to manage the tables on Google Document using Google Docs API.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": echo "npm test temporarily disabled"
   },
   "repository": {
     "type": "git",
