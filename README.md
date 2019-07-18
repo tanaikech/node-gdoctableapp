@@ -32,16 +32,16 @@ I manages the tables on Google Document using several languages. So I created th
 # Install
 
 ```bash
-$ npm install --save-dev node-gdoctableapp
+$ npm install --save-dev gdoctableapp
 ```
 
 or
 
 ```bash
-$ npm install --global node-gdoctableapp
+$ npm install --global gdoctableapp
 ```
 
-You can also see this module at [https://www.npmjs.com/package/node-gdoctableapp](https://www.npmjs.com/package/node-gdoctableapp).
+You can also see this module at [https://www.npmjs.com/package/gdoctableapp](https://www.npmjs.com/package/gdoctableapp).
 
 # Method
 
