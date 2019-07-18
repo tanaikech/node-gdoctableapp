@@ -1,6 +1,5 @@
 # node-gdoctableapp
 
-[![Build Status](https://travis-ci.org/tanaikech/node-gdoctableapp.svg?branch=master)](https://travis-ci.org/tanaikech/node-gdoctableapp)
 [![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENCE)
 
 <a name="top"></a>
