@@ -5,4 +5,4 @@ node_js:
   - "11"
   - "10"
 install:
-  - npm install gdoctableapp
+  - npm install --save gdoctableapp
