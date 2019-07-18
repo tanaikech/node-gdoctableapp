@@ -7,4 +7,5 @@ node_js:
   - "10"
 install:
   - npm install -g gdoctableapp
-script: echo "npm test temporarily disabled"
+script:
+  - echo "npm test temporarily disabled"
