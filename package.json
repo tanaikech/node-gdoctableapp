@@ -1,6 +1,6 @@
 {
   "name": "gdoctableapp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "This is a Node.js module to manage the tables on Google Document using Google Docs API.",
   "main": "index.js",
   "scripts": {
