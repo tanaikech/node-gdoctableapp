@@ -562,4 +562,8 @@ If you have any questions and commissions for me, feel free to tell me.
 
   1. Initial release.
 
+- v1.0.2 (July 21, 2019)
+
+  1. The scripts for ["Authorization"](https://github.com/tanaikech/node-gdoctableapp#authorization) "README.md" was modified.
+
 [TOP](#top)
