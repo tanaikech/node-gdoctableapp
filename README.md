@@ -477,7 +477,7 @@ function getAccessToken(oAuth2Client, callback) {
  * Using gdoctableapp.
  */
 function doGdoctableapp(auth) {
-  const gdoctableapp = require("node-gdoctableapp");
+  const gdoctableapp = require("gdoctableapp");
 
   const resource = {
     auth: auth,
@@ -503,7 +503,7 @@ Document of Service account is [here](https://developers.google.com/identity/pro
 
 ```javascript
 const { google } = require("googleapis");
-const gdoctableapp = require("node-gdoctableapp");
+const gdoctableapp = require("gdoctableapp");
 const key = require("### json file including public/private key pair ###");
 
 const jwtClient = new google.auth.JWT(
