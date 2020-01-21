@@ -1,6 +1,6 @@
 // node-gdoctableapp: This is a Node.js module to manage the tables on Google Document using Google Docs API.
 const { google } = require("googleapis");
-const version = "1.0.0";
+const version = "1.0.5";
 
 function getValuesFromTable(content) {
   return content.map(function(row) {
@@ -605,23 +605,46 @@ function parseTable(obj) {
       let tempColsContent = [];
       const contents = tableCells[j].content;
       for (let k = 0; k < contents.length; k++) {
-        const elements = contents[k].paragraph.elements;
-        for (var l = 0; l < elements.length; l++) {
-          if (k == 0 && l == 0) {
-            tempColsDelCell.deleteContentRange.range.startIndex =
-              elements[l].startIndex;
+        if ("paragraph" in contents[k]) {
+          const elements = contents[k].paragraph.elements;
+          for (var l = 0; l < elements.length; l++) {
+            if (k == 0 && l == 0) {
+              tempColsDelCell.deleteContentRange.range.startIndex =
+                elements[l].startIndex;
+            }
+            if (k == contents.length - 1 && l == elements.length - 1) {
+              tempColsDelCell.deleteContentRange.range.endIndex =
+                elements[l].endIndex - 1;
+            }
+            let cellContent = "";
+            if ("textRun" in elements[l]) {
+              cellContent = elements[l].textRun.content;
+            } else if ("inlineObjectElement" in elements[l]) {
+              cellContent = "[INLINE OBJECT]";
+            } else {
+              cellContent = "[UNSUPPORTED CONTENT]";
+            }
+            tempColsContent.push({
+              startIndex: elements[l].startIndex,
+              endIndex: elements[l].endIndex,
+              content: cellContent
+            });
           }
-          if (k == contents.length - 1 && l == elements.length - 1) {
-            tempColsDelCell.deleteContentRange.range.endIndex =
-              elements[l].endIndex - 1;
-          }
+        } else if ("table" in contents[k]) {
           tempColsContent.push({
-            startIndex: elements[l].startIndex,
-            endIndex: elements[l].endIndex,
-            content: elements[l].textRun.content
+            startIndex: contents[k].startIndex,
+            endIndex: contents[k].endIndex,
+            content: "[TABLE]"
+          });
+        } else {
+          tempColsContent.push({
+            startIndex: contents[k].startIndex,
+            endIndex: contents[k].endIndex,
+            content: "[UNSUPPORTED CONTENT]"
           });
         }
       }
+
       tempRowsDelCell.push(tempColsDelCell);
       tempRowsContent.push(tempColsContent);
     }

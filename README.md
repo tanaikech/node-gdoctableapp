@@ -158,7 +158,11 @@ const resource = {
   auth: auth,
   documentId: "###",
   tableIndex: 0,
-  values: [["a1", "b1"], ["a2", "b2"], ["a3", "b3", "c3"]]
+  values: [
+    ["a1", "b1"],
+    ["a2", "b2"],
+    ["a3", "b3", "c3"]
+  ]
 };
 gdoctableapp.SetValues(resource, function(err, res) {
   if (err) {
@@ -320,7 +324,11 @@ const resource = {
   columns: 5,
   createIndex: 1,
   // append: true, // When this is used instead of "Index", new table is created to the end of Document.
-  values: [["a1", "b1"], ["a2", "b2"], ["a3", "b3", "c3"]]
+  values: [
+    ["a1", "b1"],
+    ["a2", "b2"],
+    ["a3", "b3", "c3"]
+  ]
 };
 gdoctableapp.CreateTable(resource, function(err, res) {
   if (err) {
@@ -359,7 +367,10 @@ const resource = {
   auth: auth,
   documentId: "###",
   tableIndex: 0,
-  values: [["a1", "b1", "c1", 1, "", 2], ["a2", "b2", "c2", 1, "", 2]]
+  values: [
+    ["a1", "b1", "c1", 1, "", 2],
+    ["a2", "b2", "c2", 1, "", 2]
+  ]
 };
 gdoctableapp.AppendRow(resource, function(err, res) {
   if (err) {
@@ -566,5 +577,9 @@ If you have any questions and commissions for me, feel free to tell me.
 - v1.0.2 (July 21, 2019)
 
   1. The scripts for ["Authorization"](https://github.com/tanaikech/node-gdoctableapp#authorization) "README.md" was modified.
+
+- v1.0.5 (January 21, 2020)
+
+  1. When the inline objects and tables are put in the table. An error occurred. This bug was removed by this update.
 
 [TOP](#top)
