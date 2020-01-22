@@ -1,6 +1,8 @@
 // node-gdoctableapp: This is a Node.js module to manage the tables on Google Document using Google Docs API.
+const fs = require("fs");
+const path = require("path");
 const { google } = require("googleapis");
-const version = "1.0.5";
+const version = "1.1.0";
 
 function getValuesFromTable(content) {
   return content.map(function(row) {
@@ -338,6 +340,221 @@ function appendRowMain(obj, callback) {
   });
 }
 
+function getTextRunContent(obj, ar, h) {
+  if ("paragraph" in h) {
+    for (let i = 0; i < h.paragraph.elements.length; i++) {
+      const e = h.paragraph.elements[i];
+      if (
+        "textRun" in e &&
+        e.textRun.content.indexOf(obj.params.searchText) != -1
+      ) {
+        ar.push(e);
+      }
+    }
+  }
+}
+
+function getTableContent(obj, e) {
+  let ar = [];
+  for (let i = 0; i < e.table.tableRows.length; i++) {
+    const f = e.table.tableRows[i];
+    for (let j = 0; j < f.tableCells.length; j++) {
+      const g = f.tableCells[j];
+      for (let k = 0; k < g.content.length; k++) {
+        const h = g.content[k];
+        getTextRunContent(obj, ar, h);
+      }
+    }
+  }
+  return ar;
+}
+
+function createInsertInlineImageRequest(startIndex, url, width, height) {
+  let req = {
+    insertInlineImage: {
+      uri: url,
+      location: { index: startIndex }
+    }
+  };
+  if (!isNaN(width) && !isNaN(height) && width > 0 && height > 0) {
+    req.insertInlineImage.objectSize = {
+      width: { magnitude: width, unit: "PT" },
+      height: { magnitude: height, unit: "PT" }
+    };
+  }
+  return req;
+}
+
+function deleteTempFile(obj, callback) {
+  if (
+    "replaceImageFilePath" in obj.params &&
+    obj.params.replaceImageFilePath != "" &&
+    obj.tempFileId != ""
+  ) {
+    const drive = google.drive({
+      version: "v3",
+      auth: obj.params.auth
+    });
+    drive.files.delete({ fileId: obj.tempFileId }, function(err) {
+      if (err) {
+        callback(err, null);
+        return;
+      }
+      callback(null, "done");
+    });
+  } else {
+    callback(null, "done");
+  }
+}
+
+function uploadImageFile(obj, callback) {
+  if (
+    (!("replaceImageURL" in obj.params) || !obj.params.replaceImageURL) &&
+    "replaceImageFilePath" in obj.params &&
+    obj.params.replaceImageFilePath != ""
+  ) {
+    const drive = google.drive({ version: "v3", auth: obj.params.auth });
+    drive.files.create(
+      {
+        requestBody: {
+          name: path.basename(obj.params.replaceImageFilePath)
+        },
+        media: {
+          body: fs.createReadStream(obj.params.replaceImageFilePath)
+        },
+        fields: "id,webContentLink"
+      },
+      function(err, file) {
+        if (err) {
+          callback(err, null);
+          return;
+        }
+        obj.result.responseFromAPIs.push(file.data);
+        obj.params.replaceImageURL = file.data.webContentLink;
+        obj.tempFileId = file.data.id;
+        drive.permissions.create(
+          {
+            fileId: file.data.id,
+            requestBody: {
+              type: "anyone",
+              role: "reader"
+            }
+          },
+          function(err, file) {
+            if (err) {
+              callback(err, null);
+              return;
+            }
+            obj.result.responseFromAPIs.push(file.data);
+            callback(null, "done");
+          }
+        );
+      }
+    );
+  } else {
+    callback(null, "done");
+  }
+}
+
+function replaceTextsToImagesByURL(obj, callback) {
+  const contents = obj.docTables.reduce(function(a, e) {
+    if ("table" in e) {
+      Array.prototype.push.apply(a, getTableContent(obj, e));
+    } else if ("paragraph" in e) {
+      getTextRunContent(obj, a, e);
+    }
+    return a;
+  }, []);
+  const searchText = obj.params.searchText;
+  const replacedUrl = obj.params.replaceImageURL;
+  const width = obj.params.imageWidth;
+  const height = obj.params.imageHeight;
+  const requests = contents.reverse().reduce(function(ar, e) {
+    const content = e.textRun.content;
+    if (content.trim() == searchText) {
+      const offset = content.length - content.trim().length;
+      ar.push({
+        deleteContentRange: {
+          range: { startIndex: e.startIndex, endIndex: e.endIndex - offset }
+        }
+      });
+      ar.push(
+        createInsertInlineImageRequest(e.startIndex, replacedUrl, width, height)
+      );
+    } else {
+      const start = e.startIndex + content.indexOf(searchText);
+      ar.push({
+        deleteContentRange: {
+          range: {
+            startIndex: start,
+            endIndex: start + searchText.length
+          }
+        }
+      });
+      ar.push(
+        createInsertInlineImageRequest(start, replacedUrl, width, height)
+      );
+    }
+    return ar;
+  }, []);
+  if (requests.length > 0) {
+    obj.requestBody = requests;
+    documentsBatchUpdate(obj)
+      .then(function(res) {
+        obj.result.responseFromAPIs.push(res.data);
+        callback(null, "done");
+      })
+      .catch(function(err) {
+        callback(err, null);
+      });
+  } else {
+    callback(`'${searchText}' was not found.`, null);
+  }
+}
+
+function replaceTextsToImagesMain(obj, callback) {
+  Promise.resolve()
+    .then(function() {
+      return new Promise(function(resolve, reject) {
+        uploadImageFile(obj, function(err, res) {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(res);
+        });
+      });
+    })
+    .then(function() {
+      return new Promise(function(resolve, reject) {
+        replaceTextsToImagesByURL(obj, function(err, res) {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(res);
+        });
+      });
+    })
+    .then(function() {
+      return new Promise(function(resolve, reject) {
+        deleteTempFile(obj, function(err, res) {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(res);
+        });
+      });
+    })
+    .then(function() {
+      callback(null, obj);
+    })
+    .catch(function(err) {
+      callback(err, null);
+    });
+}
+
 function createRequestBodyForInsertText(obj, requests, idx) {
   const val = parseInputValues(
     obj.params.values,
@@ -656,6 +873,18 @@ function parseTable(obj) {
   obj.cell1stIndex = valuesIndexes.content[0][0][0].startIndex;
 }
 
+function getAllContents(obj, callback) {
+  getDocument(obj)
+    .then(function(contents) {
+      obj.docTables = contents;
+      obj.result.responseFromAPIs.push(contents);
+      callback(null, obj);
+    })
+    .catch(function(err) {
+      callback(err, null);
+    });
+}
+
 function getAllTables(obj, callback) {
   getDocument(obj)
     .then(function(contents) {
@@ -751,6 +980,14 @@ function init(e, callback) {
   if ("tableIndex" in obj.params) {
     if (obj.params.tableIndex == -1) {
       getAllTables(obj, function(err, obj) {
+        if (err) {
+          callback(err, null);
+          return;
+        }
+        callback(null, obj);
+      });
+    } else if (obj.params.tableIndex == -2) {
+      getAllContents(obj, function(err, obj) {
         if (err) {
           callback(err, null);
           return;
@@ -911,6 +1148,24 @@ function appendRow(params, callback) {
   });
 }
 
+function replaceTextsToImages(params, callback) {
+  params.tableIndex = params.tableOnly ? -1 : -2;
+  init(params, function(err, obj) {
+    if (err) {
+      callback(err, null);
+      return;
+    }
+    replaceTextsToImagesMain(obj, function(err, obj) {
+      if (err) {
+        callback(err, null);
+        return;
+      }
+      if (!obj.params.showAPIResponse) delete obj.result.responseFromAPIs;
+      callback(null, obj.result);
+    });
+  });
+}
+
 module.exports = {
   GetTables: getTables,
   GetValues: getValues,
@@ -918,5 +1173,6 @@ module.exports = {
   DeleteTable: deleteTable,
   DeleteRowsAndColumns: deleteRowsAndColumns,
   CreateTable: createTable,
-  AppendRow: appendRow
+  AppendRow: appendRow,
+  ReplaceTextsToImages: replaceTextsToImages
 };

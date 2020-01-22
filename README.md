@@ -20,6 +20,10 @@ Google Docs API has been released. When I used this API, I found that it is very
 - Delete table, rows and columns of the table.
 - New table can be created by including values.
 - Append rows to the table by including values.
+- Replace texts with images.
+
+      	- The image data can be retrieved from URL.
+      	- The image data can be uploaded from the local PC.
 
 ## Languages
 
@@ -56,6 +60,7 @@ You can also see this module at [https://www.npmjs.com/package/gdoctableapp](htt
 | [`DeleteRowsAndColumns()`](#deleterowsandcolumns) | Delete rows and columns of a table.             |
 | [`CreateTable()`](createtable)                    | Create new table including sell values.         |
 | [`AppendRow()`](#appendrow)                       | Append row to a table by including values.      |
+| [`ReplaceTextsToImages()`](#replacetexts)         | Replace texts with images from URL or file.     |
 
 This library uses [googleapis](https://github.com/googleapis/googleapis).
 
@@ -82,7 +87,7 @@ About the authorization, please check the section of [Authorization](#authorizat
 
 ## Scope
 
-In this library, using the scope of `https://www.googleapis.com/auth/documents` is recommended.
+In this library, using the scope of `https://www.googleapis.com/auth/documents` is recommended. When the method of `ReplaceTextsToImagesByFile` is used, also please add `https://www.googleapis.com/auth/drive`.
 
 <a name="gettables"></a>
 
@@ -102,7 +107,7 @@ const resource = {
 };
 gdoctableapp.GetTables(resource, function(err, res) {
   if (err) {
-    console.log(err.errors);
+    console.log(err);
     return;
   }
   console.log(JSON.stringify(res.tables));
@@ -131,7 +136,7 @@ const resource = {
 };
 gdoctableapp.GetValues(resource, function(err, res) {
   if (err) {
-    console.log(err.errors);
+    console.log(err);
     return;
   }
   console.log(res.values); // You can see the retrieved values like this.
@@ -166,7 +171,7 @@ const resource = {
 };
 gdoctableapp.SetValues(resource, function(err, res) {
   if (err) {
-    console.log(err.errors);
+    console.log(err);
     return;
   }
   console.log(res); // You can see the retrieved responses from Docs API.
@@ -219,7 +224,7 @@ const resource = {
 };
 gdoctableapp.SetValues(resource, function(err, res) {
   if (err) {
-    console.log(err.errors);
+    console.log(err);
     return;
   }
   console.log(res); // You can see the retrieved responses from Docs API.
@@ -264,7 +269,7 @@ const resource = {
 };
 gdoctableapp.DeleteTable(resource, function(err, res) {
   if (err) {
-    console.log(err.errors);
+    console.log(err);
     return;
   }
   console.log(res.result); // You can see the retrieved responses from Docs API.
@@ -294,7 +299,7 @@ const resource = {
 };
 gdoctableapp.DeleteRowsAndColumns(resource, function(err, res) {
   if (err) {
-    console.log(err.errors);
+    console.log(err);
     return;
   }
   console.log(res); // You can see the retrieved responses from Docs API.
@@ -332,7 +337,7 @@ const resource = {
 };
 gdoctableapp.CreateTable(resource, function(err, res) {
   if (err) {
-    console.log(err.errors);
+    console.log(err);
     return;
   }
   console.log(res); // You can see the retrieved responses from Docs API.
@@ -374,7 +379,7 @@ const resource = {
 };
 gdoctableapp.AppendRow(resource, function(err, res) {
   if (err) {
-    console.log(err.errors);
+    console.log(err);
     return;
   }
   console.log(res); // You can see the retrieved responses from Docs API.
@@ -398,6 +403,76 @@ When above script is run, the following result is obtained. In this case, the va
 #### From:
 
 ![](images/fig6.png)
+
+<a name="replacetexts"></a>
+
+## 9. ReplaceTextsToImages
+
+### Sample script
+
+In this sample, the texts `{{sample}}` in all tables are replaced with the image. In this case, you can use the image from an URL or a file on local PC.
+
+```javascript
+const resource = {
+  auth: auth,
+  documentId: "###",
+  showAPIResponse: false, // default is false
+  tableOnly: true, // default is false
+  searchText: "{{sample}}",
+  imageWidth: 50,
+  imageHeight: 50,
+  replaceImageURL: "https://###/sample.png"
+  // replaceImageFilePath: "./sample.png"
+};
+gdoctableapp.ReplaceTextsToImages(resource, function(err, res) {
+  if (err) {
+    console.log(err);
+    return;
+  }
+  console.log(JSON.stringify(res));
+});
+```
+
+- `documentId`: Document ID.
+- `auth`: oAuth2Client for using Docs API. Please check the section of [Authorization](#authorization).
+- `searchText`: Search text. This text is replaced with image.
+- `replaceImageURL`: URL of the image. When this property is used, the image is retrieved from the URL, and the retrieved image is used.
+- `replaceImageFilePath`: File path of the image. When this property is used, the image is retrieved from the file on local PC, and the retrieved image is used.
+
+- `imageWidth`: Width of the put image.
+- `imageHeight`: Height of the put image.
+- `tableOnly`: When this is `true`, only texts in the table are replaced with image. When this is `false`, the texts in the body are replaced.
+- `showAPIResponse`: When `showAPIResponse: true` is used to `resource`, the responses from Docs API can be seen. The default value is `false`.
+
+### Note
+
+- The flow for replacing the text with the image on the local PC.
+
+  1. Upload the image from local PC to Google Drive.
+  2. Publicly share the image file. - The time for sharing is several seconds. The file is delete after the image is put.
+  3. Put the image using the URL of the publicly shared file.
+  4. Delete the image. - Even when the image is delete from Google Drive, the put image on Google Document is not deleted.
+
+- About `imageWidth` and `imageHeight`
+  > [**objectSize**](https://developers.google.com/docs/api/reference/rest/v1/documents/request#insertinlineimagerequest): The size that the image should appear as in the document. This property is optional and the final size of the image in the document is determined by the following rules: _ If neither width nor height is specified, then a default size of the image is calculated based on its resolution. _ If one dimension is specified then the other dimension is calculated to preserve the aspect ratio of the image. \* If both width and height are specified, the image is scaled to fit within the provided dimensions while maintaining its aspect ratio.
+
+### Result
+
+When above script is run, the following result is obtained.
+
+#### From:
+
+![](images/fig7.png)
+
+#### To:
+
+![](images/fig8.png)
+
+The image of `https://cdn.sstatic.net/Sites/stackoverflow/company/img/logos/so/so-logo.png` was used as the sample image.
+
+When `tableOnly` is `false`, the following result is retrieved.
+
+![](images/fig9.png)
 
 <a name="authorization"></a>
 
@@ -499,7 +574,7 @@ function doGdoctableapp(auth) {
 
   gdoctableapp.GetValues(resource, function(err, res) {
     if (err) {
-      console.log(err.errors);
+      console.log(err);
       return;
     }
     console.log(res.values); // You can see the retrieved values like this.
@@ -534,7 +609,7 @@ const resource = {
 
 gdoctableapp.GetValues(resource, function(err, res) {
   if (err) {
-    console.log(err.errors);
+    console.log(err);
     return;
   }
   console.log(res.values); // You can see the retrieved values like this.
@@ -581,5 +656,9 @@ If you have any questions and commissions for me, feel free to tell me.
 - v1.0.5 (January 21, 2020)
 
   1. When the inline objects and tables are put in the table. An error occurred. This bug was removed by this update.
+
+- v1.1.0 (January 22, 2020)
+
+  1. [New method was added.](#replacetexts) From this version, the texts can be replaced by images. The direct link and local file can be used as the image.
 
 [TOP](#top)
